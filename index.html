@@ -136,18 +136,26 @@ function speakBtn(text, rate=0.9) {
   return b;
 }
 
+// 全域圖片快取：key=單字, value={seed, status}
+const imgCache = {};
+
 function imageCard(word, imgPrompt) {
   const wrap = h('div',{style:{marginTop:'14px'}});
   // 固定 seed：用單字的 hash，換一張才隨機
   const wordSeeds = {bricklaying:65780,mortar:46164,trowel:79426,foreman:38132,harness:13184,smoko:57805,arvo:66277,tradie:61625,reckon:71655,mate:31583,heaps:37333,plumb:53542,course:90121,subcontractor:89503,lease:60292,bond:22602,Medicare:64451,strategy:85243,establish:9745,obtain:62653,perceive:11167,retain:97005,assess:19023,anticipate:44071,acknowledge:36274};
-  let seed = wordSeeds[word] || 12345;
-  let status = 'idle';
+  // 從快取讀取，若無則初始化
+  if(!imgCache[word]) imgCache[word] = { seed: wordSeeds[word]||12345, status:'idle' };
+  let seed = imgCache[word].seed;
+  let status = imgCache[word].status;
 
   function render() {
+    // 每次渲染前從快取同步最新狀態
+    seed = imgCache[word] ? imgCache[word].seed : seed;
+    status = imgCache[word] ? imgCache[word].status : status;
     wrap.innerHTML='';
     if(status==='idle') {
       const btn = h('button',{style:{width:'100%',padding:'10px',borderRadius:'10px',border:'1px dashed #334155',background:'transparent',color:'#475569',cursor:'pointer',fontSize:'13px'}},'🖼️ 生成 AI 情境圖片');
-      btn.addEventListener('click',()=>{ status='loading'; seed=Math.floor(Math.random()*99999); render(); loadImg(); });
+      btn.addEventListener('click',()=>{ status='loading'; seed=imgCache[word].seed; imgCache[word].status='loading'; render(); loadImg(); });
       wrap.appendChild(btn);
     } else if(status==='loading') {
       wrap.appendChild(h('div',{style:{height:'160px',background:'#0f172a',borderRadius:'10px',border:'1px solid #1e293b',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',color:'#475569',fontSize:'13px'}},
@@ -163,7 +171,7 @@ function imageCard(word, imgPrompt) {
     } else {
       const errDiv = h('div',{style:{fontSize:'12px',color:'#64748b',textAlign:'center',padding:'8px'}},'圖片載入失敗 ');
       const retry = h('button',{style:{background:'none',border:'none',color:'#3b82f6',cursor:'pointer',fontSize:'12px'}},'重試');
-      retry.addEventListener('click',()=>{ status='loading'; render(); loadImg(); });
+      retry.addEventListener('click',()=>{ status='loading'; imgCache[word].status='loading'; render(); loadImg(); });
       errDiv.appendChild(retry);
       wrap.appendChild(errDiv);
     }
@@ -172,8 +180,8 @@ function imageCard(word, imgPrompt) {
   function loadImg() {
     const url = imgUrl(imgPrompt, seed);
     const img = new Image();
-    img.onload = ()=>{ status='done'; render(); };
-    img.onerror = ()=>{ status='error'; render(); };
+    img.onload = ()=>{ status='done'; imgCache[word].status='done'; render(); };
+    img.onerror = ()=>{ status='error'; imgCache[word].status='error'; render(); };
     img.src = url;
   }
 
