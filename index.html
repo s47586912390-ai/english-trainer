@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Perth英文">
+<meta name="theme-color" content="#020817">
+<title>Perth English Trainer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #020817;
+    color: #f1f5f9;
+    font-family: -apple-system, 'Inter', 'Noto Sans TC', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 48px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font-family: inherit; }
+  input { font-family: inherit; }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 4px #dc262640; }
+    50% { box-shadow: 0 0 0 10px #dc262615; }
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  input:focus { border-color: #3b82f6 !important; outline: none; }
+  button:active { opacity: 0.75; }
+</style>
+</head>
+<body>
+<div id="app" style="width:100%;max-width:480px;"></div>
+
+<script>
+const WORDS = [
+  { word:"bricklaying", pos:"n.", zh:"砌磚（工藝）", imgPrompt:"worker laying bricks on construction site Australia", sentences:["He has five years of experience in ____.", "____ requires both skill and patience.", "He learned ____ from his uncle."] },
+  { word:"mortar", pos:"n.", zh:"砂漿", imgPrompt:"construction worker mixing cement mortar with trowel", sentences:["Mix the ____ before laying the bricks.", "The ____ was too dry to use.", "Apply ____ evenly between each course."] },
+  { word:"trowel", pos:"n.", zh:"泥刀、抹刀", imgPrompt:"bricklayer holding steel trowel spreading mortar", sentences:["Use a ____ to spread the mortar evenly.", "He cleaned his ____ after finishing the wall.", "A ____ is one of the most important tools."] },
+  { word:"foreman", pos:"n.", zh:"工頭、領班", imgPrompt:"construction foreman with hard hat supervising workers on site", sentences:["Check with the ____ before starting.", "The ____ inspected the wall.", "The ____ assigned tasks to each worker."] },
+  { word:"harness", pos:"n.", zh:"安全帶", imgPrompt:"construction worker wearing safety harness at height", sentences:["Always wear your ____ at heights.", "The ____ kept him safe.", "Check your ____ before climbing."] },
+  { word:"smoko", pos:"n.", zh:"（澳洲）休息時間", imgPrompt:"Australian construction workers taking coffee break smiling", sentences:["We'll have ____ at ten.", "Grab a coffee during ____.", "Workers gathered for ____."] },
+  { word:"arvo", pos:"n.", zh:"（澳洲）下午", imgPrompt:"sunny Australian afternoon Perth skyline", sentences:["We finish this ____.", "See you this ____ on site.", "It gets hot in the ____."] },
+  { word:"tradie", pos:"n.", zh:"（澳洲）技術工人", imgPrompt:"Australian tradie worker in hi-vis vest with tools", sentences:["Most ____s start work early.", "He's been a ____ for ten years.", "Perth needs skilled ____s."] },
+  { word:"reckon", pos:"v.", zh:"（澳洲口語）認為", imgPrompt:"Australian man thinking pointing finger casual conversation", sentences:["I ____ we should leave early.", "Do you ____ it will rain?", "He ____ed the job would take three days."] },
+  { word:"mate", pos:"n.", zh:"（澳洲口語）朋友", imgPrompt:"two Australian friends laughing together outdoors", sentences:["No worries, ____.", "How are you going, ____?", "He's my ____ from site."] },
+  { word:"heaps", pos:"adv.", zh:"（澳洲口語）很多", imgPrompt:"large pile of objects abundance plenty", sentences:["Thanks ____ for your help.", "There are ____ of jobs here.", "He has ____ of experience."] },
+  { word:"plumb", pos:"adj./v.", zh:"垂直的；測垂直", imgPrompt:"builder checking wall is perfectly vertical with plumb line", sentences:["Check that the wall is ____.", "He used a ____ line.", "The column was not ____."] },
+  { word:"course", pos:"n.", zh:"一排磚", imgPrompt:"close up single row of bricks being laid on wall", sentences:["Lay one ____ at a time.", "The wall has twelve ____s.", "Each ____ must be level."] },
+  { word:"subcontractor", pos:"n.", zh:"分包商", imgPrompt:"contractor signing paperwork on construction site", sentences:["He works as a ____.", "As a ____, you manage your tax.", "The ____ sent an invoice weekly."] },
+  { word:"lease", pos:"n./v.", zh:"租約", imgPrompt:"person signing rental lease contract apartment", sentences:["Sign a twelve-month ____.", "The ____ starts next month.", "Read the ____ carefully."] },
+  { word:"bond", pos:"n.", zh:"租房押金", imgPrompt:"person handing over cash deposit keys apartment rental", sentences:["Pay a four-week ____.", "You get the ____ back if clean.", "The landlord held the ____."] },
+  { word:"Medicare", pos:"n.", zh:"澳洲醫療保險", imgPrompt:"Australian Medicare health insurance card doctor visit", sentences:["____ covers most doctor visits.", "Enrol in ____ when you arrive.", "With ____, you can see a GP for free."] },
+  { word:"strategy", pos:"n.", zh:"策略、計劃", imgPrompt:"person planning strategy on whiteboard with arrows", sentences:["Develop a ____ for learning English.", "A clear ____ helps you reach IELTS 7.", "The company's ____ is to expand."] },
+  { word:"establish", pos:"v.", zh:"建立、確立", imgPrompt:"person building foundation laying groundwork new business", sentences:["He ____d a good reputation.", "They ____d new safety rules.", "It takes time to ____ yourself here."] },
+  { word:"obtain", pos:"v.", zh:"取得、獲得", imgPrompt:"person receiving official document certificate achievement", sentences:["You must ____ a visa first.", "He ____d his PR after four years.", "It takes time to ____ residency."] },
+  { word:"perceive", pos:"v.", zh:"感知；認為", imgPrompt:"person thinking observing interpreting situation carefully", sentences:["He ____d the rules as unfair.", "How do colleagues ____ you?", "Being quiet may be ____d as unfriendly."] },
+  { word:"retain", pos:"v.", zh:"保留、維持", imgPrompt:"person holding onto important knowledge memory brain", sentences:["Try to ____ vocabulary.", "The company ____d its best workers.", "Sentences help you ____ words longer."] },
+  { word:"assess", pos:"v.", zh:"評估", imgPrompt:"professional evaluating and assessing work quality checklist", sentences:["The manager will ____ your performance.", "We need to ____ the risk.", "The doctor ____d his injury."] },
+  { word:"anticipate", pos:"v.", zh:"預期、預料", imgPrompt:"person looking ahead planning future preparation", sentences:["We ____ strong demand.", "She ____d the question early.", "You should ____ difficulties abroad."] },
+  { word:"acknowledge", pos:"v.", zh:"承認；致謝", imgPrompt:"person nodding accepting admitting truth honestly", sentences:["He ____d the mistake.", "Please ____ receipt of this email.", "She ____d her error in front of the team."] },
+];
+
+// ── utils ──────────────────────────────────────────────
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+function speak(text, rate=0.9) {
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='en-AU'; u.rate=rate; u.pitch=1;
+  const voices = window.speechSynthesis.getVoices();
+  const v = voices.find(v=>v.lang==='en-AU') || voices.find(v=>v.lang.startsWith('en'));
+  if(v) u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+
+function imgUrl(prompt, seed) {
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt+', photorealistic, high quality')}?width=480&height=300&nologo=true&seed=${seed}`;
+}
+
+// ── SRS deck ───────────────────────────────────────────
+function createDeck(words) {
+  return {
+    queue: shuffle(words),
+    mastered: new Set(),
+    wrongOnce: new Set(),
+    wrongCount: 0,
+  };
+}
+
+// ── STATE ──────────────────────────────────────────────
+let state = {
+  mode: null,      // flashcard | fillblank | quiz | speaking
+  deck: null,
+  cardState: {},   // per-card UI state
+};
+
+// ── RENDER ENGINE ──────────────────────────────────────
+function h(tag, attrs={}, ...children) {
+  const el = document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)) {
+    if(k==='style' && typeof v==='object') Object.assign(el.style, v);
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v);
+  }
+  for(const c of children.flat()) {
+    if(c==null) continue;
+    el.appendChild(typeof c==='string' ? document.createTextNode(c) : c);
+  }
+  return el;
+}
+
+// ── COMPONENTS ─────────────────────────────────────────
+function progressBar(mastered, total, remaining) {
+  const pct = Math.round(mastered/total*100);
+  return h('div', {style:{width:'100%',marginBottom:4}},
+    h('div', {style:{display:'flex',justifyContent:'space-between',fontSize:'12px',color:'#64748b',marginBottom:'6px'}},
+      h('span',{},'✅ 已記熟 ', h('b',{style:{color:'#4ade80'}},String(mastered)), ` / ${total}`),
+      h('span',{},'剩餘 ', h('b',{style:{color:'#f59e0b'}},String(remaining)), ' 張')
+    ),
+    h('div', {style:{height:'6px',background:'#1e293b',borderRadius:'99px',overflow:'hidden'}},
+      h('div', {style:{height:'100%',width:pct+'%',background:'#4ade80',borderRadius:'99px',transition:'width 0.4s'}})
+    )
+  );
+}
+
+function speakBtn(text, rate=0.9) {
+  const b = h('button',{style:{background:'none',border:'none',cursor:'pointer',fontSize:'18px',flexShrink:'0',padding:'2px'}},'🔊');
+  b.addEventListener('click',e=>{e.stopPropagation();speak(text,rate);});
+  return b;
+}
+
+function imageCard(word, imgPrompt) {
+  const wrap = h('div',{style:{marginTop:'14px'}});
+  let seed = Math.floor(Math.random()*99999);
+  let status = 'idle';
+
+  function render() {
+    wrap.innerHTML='';
+    if(status==='idle') {
+      const btn = h('button',{style:{width:'100%',padding:'10px',borderRadius:'10px',border:'1px dashed #334155',background:'transparent',color:'#475569',cursor:'pointer',fontSize:'13px'}},'🖼️ 生成 AI 情境圖片');
+      btn.addEventListener('click',()=>{ status='loading'; seed=Math.floor(Math.random()*99999); render(); loadImg(); });
+      wrap.appendChild(btn);
+    } else if(status==='loading') {
+      wrap.appendChild(h('div',{style:{height:'160px',background:'#0f172a',borderRadius:'10px',border:'1px solid #1e293b',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',color:'#475569',fontSize:'13px'}},
+        h('div',{style:{fontSize:'28px'}},'🎨'),
+        h('div',{},'圖片生成中，請稍候…')
+      ));
+    } else if(status==='done') {
+      const img = h('img',{src:imgUrl(imgPrompt,seed),alt:word,style:{width:'100%',borderRadius:'10px',border:'1px solid #1e293b',display:'block'}});
+      const reBtn = h('button',{style:{position:'absolute',top:'8px',right:'8px',background:'#00000099',border:'none',borderRadius:'6px',color:'#94a3b8',cursor:'pointer',fontSize:'11px',padding:'4px 8px'}},'🔄 換一張');
+      reBtn.addEventListener('click',()=>{ status='loading'; seed=Math.floor(Math.random()*99999); render(); loadImg(); });
+      const rel = h('div',{style:{position:'relative',borderRadius:'10px',overflow:'hidden'}}, img, reBtn);
+      wrap.appendChild(rel);
+    } else {
+      const errDiv = h('div',{style:{fontSize:'12px',color:'#64748b',textAlign:'center',padding:'8px'}},'圖片載入失敗 ');
+      const retry = h('button',{style:{background:'none',border:'none',color:'#3b82f6',cursor:'pointer',fontSize:'12px'}},'重試');
+      retry.addEventListener('click',()=>{ status='loading'; render(); loadImg(); });
+      errDiv.appendChild(retry);
+      wrap.appendChild(errDiv);
+    }
+  }
+
+  function loadImg() {
+    const url = imgUrl(imgPrompt, seed);
+    const img = new Image();
+    img.onload = ()=>{ status='done'; render(); };
+    img.onerror = ()=>{ status='error'; render(); };
+    img.src = url;
+  }
+
+  render();
+  return wrap;
+}
+
+function resultBadge(correct, spoken) {
+  return h('div',{style:{padding:'10px 16px',borderRadius:'10px',background:correct?'#14532d':'#450a0a',border:`1px solid ${correct?'#16a34a':'#dc2626'}`,fontSize:'13px',color:correct?'#4ade80':'#f87171'}},
+    correct ? '✅ 正確！' : `❌ 你的答案：「${spoken}」`
+  );
+}
+
+function finishScreen(total, wrongCount, onRestart) {
+  const correct = total - wrongCount;
+  const pct = Math.round(correct/total*100);
+  const stars = pct===100?'🌟🌟🌟':pct>=80?'⭐⭐⭐':pct>=60?'⭐⭐':'⭐';
+  const restartBtn = h('button',{style:{padding:'12px 36px',borderRadius:'100px',border:'none',background:'#3b82f6',color:'#fff',fontWeight:'700',fontSize:'15px',cursor:'pointer'}},'🔄 再練一輪');
+  restartBtn.addEventListener('click', onRestart);
+  return h('div',{style:{textAlign:'center',padding:'32px 20px',background:'#0f172a',borderRadius:'20px',border:'1px solid #1e293b'}},
+    h('div',{style:{fontSize:'52px',marginBottom:'12px'}},stars),
+    h('div',{style:{fontSize:'22px',fontWeight:'800',color:'#f1f5f9',marginBottom:'6px'}},'這輪練習完成！'),
+    h('div',{style:{fontSize:'14px',color:'#64748b',marginBottom:'24px'}},`共 ${total} 個單字，首次答對 ${correct} 個（${pct}%）`),
+    h('div',{style:{display:'flex',gap:'12px',justifyContent:'center',marginBottom:'20px'}},
+      h('div',{style:{background:'#14532d',border:'1px solid #16a34a',borderRadius:'12px',padding:'14px 24px'}},
+        h('div',{style:{fontSize:'28px',fontWeight:'800',color:'#4ade80'}},String(correct)),
+        h('div',{style:{fontSize:'12px',color:'#86efac'}},'記熟')
+      ),
+      h('div',{style:{background:'#450a0a',border:'1px solid #dc2626',borderRadius:'12px',padding:'14px 24px'}},
+        h('div',{style:{fontSize:'28px',fontWeight:'800',color:'#f87171'}},String(wrongCount)),
+        h('div',{style:{fontSize:'12px',color:'#fca5a5'}},'需加強')
+      )
+    ),
+    pct===100
+      ? h('div',{style:{fontSize:'14px',color:'#4ade80',marginBottom:'20px'}},'全部記熟了！厲害 💪')
+      : h('div',{style:{fontSize:'13px',color:'#64748b',marginBottom:'20px'}},'建議明天再練一次不熟的單字'),
+    restartBtn
+  );
+}
+
+// ── SRS answer logic ───────────────────────────────────
+function answerCard(correct) {
+  const d = state.deck;
+  const card = d.queue[0];
+  if(!card) return;
+  if(correct) {
+    d.mastered.add(card.word);
+    d.queue.shift();
+  } else {
+    if(!d.wrongOnce.has(card.word)) { d.wrongCount++; d.wrongOnce.add(card.word); }
+    const rest = d.queue.slice(1);
+    const at = rest.length<=1 ? rest.length : Math.floor(Math.random()*(rest.length-1))+1;
+    d.queue = [...rest.slice(0,at), card, ...rest.slice(at)];
+  }
+  state.cardState = {};
+  renderMode();
+}
+
+// ── MODES ──────────────────────────────────────────────
+function renderFlashcard() {
+  const d = state.deck;
+  if(d.queue.length===0) return finishScreen(WORDS.length, d.wrongCount, ()=>{ state.deck=createDeck(WORDS); renderMode(); });
+  const card = d.queue[0];
+  const cs = state.cardState;
+
+  const container = h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'16px',width:'100%'}});
+  container.appendChild(progressBar(d.mastered.size, WORDS.length, d.queue.length));
+
+  const cardDiv = h('div',{style:{
+    width:'100%',minHeight:'190px',
+    background: cs.flipped?'#1e3a5f':'#0f172a',
+    border:`2px solid ${cs.flipped?'#3b82f6':'#334155'}`,
+    borderRadius:'16px', cursor: cs.flipped?'default':'pointer',
+    padding:'26px', display:'flex', flexDirection:'column',
+    alignItems:'center', justifyContent:'center', gap:'10px',
+    transition:'all 0.25s', boxShadow: cs.flipped?'0 0 30px #3b82f620':'none',
+  }});
+
+  if(!cs.flipped) {
+    cardDiv.appendChild(h('div',{style:{fontSize:'11px',color:'#64748b',letterSpacing:'3px',textTransform:'uppercase'}},'點擊翻牌'));
+    cardDiv.appendChild(h('div',{style:{fontSize:'36px',fontWeight:'800',color:'#f1f5f9'}},card.word));
+    cardDiv.appendChild(h('div',{style:{fontSize:'13px',color:'#64748b'}},card.pos));
+    cardDiv.addEventListener('click',()=>{ state.cardState.flipped=true; speak(card.word); renderMode(); });
+  } else {
+    const wordRow = h('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+      h('div',{style:{fontSize:'28px',fontWeight:'700',color:'#f1f5f9'}},card.word),
+      speakBtn(card.word)
+    );
+    cardDiv.appendChild(wordRow);
+    cardDiv.appendChild(h('div',{style:{fontSize:'17px',color:'#93c5fd'}},card.zh));
+    const sentsDiv = h('div',{style:{borderTop:'1px solid #1e40af',width:'100%',paddingTop:'10px',marginTop:'4px'}});
+    card.sentences.slice(0,2).forEach(s=>{
+      const row = h('div',{style:{display:'flex',gap:'6px',marginBottom:'6px',alignItems:'flex-start'}},
+        h('span',{style:{fontSize:'12px',color:'#94a3b8',lineHeight:'1.6'}},s.replace('____',`[${card.word}]`)),
+        speakBtn(s.replace('____',card.word),0.9)
+      );
+      sentsDiv.appendChild(row);
+    });
+    cardDiv.appendChild(sentsDiv);
+    cardDiv.appendChild(imageCard(card.word, card.imgPrompt));
+  }
+  container.appendChild(cardDiv);
+
+  if(cs.flipped) {
+    const btnRow = h('div',{style:{display:'flex',gap:'12px',width:'100%'}});
+    const knowBtn = h('button',{style:{flex:'1',padding:'12px',borderRadius:'10px',border:'none',background:'#16a34a',color:'#fff',fontWeight:'700',fontSize:'15px',cursor:'pointer'}},'✅ 記熟了');
+    knowBtn.addEventListener('click',()=>answerCard(true));
+    const unknownBtn = h('button',{style:{flex:'1',padding:'12px',borderRadius:'10px',border:'none',background:'#dc2626',color:'#fff',fontWeight:'700',fontSize:'15px',cursor:'pointer'}},'❌ 還不熟');
+    unknownBtn.addEventListener('click',()=>answerCard(false));
+    btnRow.appendChild(knowBtn); btnRow.appendChild(unknownBtn);
+    container.appendChild(btnRow);
+  } else {
+    const flipBtn = h('button',{style:{width:'100%',padding:'11px',borderRadius:'10px',border:'2px solid #334155',background:'transparent',color:'#94a3b8',fontSize:'14px',cursor:'pointer'}},'翻牌 + 聽發音');
+    flipBtn.addEventListener('click',()=>{ state.cardState.flipped=true; speak(card.word); renderMode(); });
+    container.appendChild(flipBtn);
+  }
+  return container;
+}
+
+function renderFillBlank() {
+  const d = state.deck;
+  if(d.queue.length===0) return finishScreen(WORDS.length, d.wrongCount, ()=>{ state.deck=createDeck(WORDS); renderMode(); });
+  const card = d.queue[0];
+  const cs = state.cardState;
+
+  if(!cs.initialized) { cs.initialized=true; cs.input=''; cs.result=null; cs.spoken=''; setTimeout(()=>speak(card.sentences[0].replace('____','blank')),200); }
+
+  const container = h('div',{style:{display:'flex',flexDirection:'column',gap:'14px',width:'100%'}});
+  container.appendChild(progressBar(d.mastered.size, WORDS.length, d.queue.length));
+
+  const cardDiv = h('div',{style:{background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'22px'}});
+  cardDiv.appendChild(h('div',{style:{fontSize:'11px',color:'#64748b',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'10px'}},'填入正確單字'));
+  const sentRow = h('div',{style:{display:'flex',alignItems:'flex-start',gap:'8px'}},
+    h('div',{style:{fontSize:'17px',lineHeight:'1.7',color:cs.result==='correct'?'#4ade80':cs.result==='wrong'?'#f87171':'#e2e8f0'}},
+      cs.result ? card.sentences[0].replace('____',`[${card.word}]`) : card.sentences[0]
+    ),
+    speakBtn(card.sentences[0].replace('____','blank'))
+  );
+  cardDiv.appendChild(sentRow);
+  if(cs.result) {
+    cardDiv.appendChild(h('div',{style:{marginTop:'8px',fontSize:'13px',color:'#64748b'}},`${card.zh} · ${card.pos}`));
+    cardDiv.appendChild(imageCard(card.word, card.imgPrompt));
+  }
+  container.appendChild(cardDiv);
+
+  if(cs.result) container.appendChild(resultBadge(cs.result==='correct', cs.spoken));
+
+  function doCheck(ans) {
+    if(!ans.trim() || cs.result) return;
+    const correct = ans.trim().toLowerCase()===card.word.toLowerCase();
+    cs.spoken = ans.trim(); cs.result = correct?'correct':'wrong';
+    speak(card.word);
+    answerCard(correct);
+    // re-render but keep result visible briefly
+    state.cardState = {...cs};
+    renderMode();
+  }
+
+  if(!cs.result) {
+    const inputRow = h('div',{style:{display:'flex',gap:'8px',alignItems:'center'}});
+    const input = h('input',{type:'text',value:cs.input||'',placeholder:'輸入或說出答案…',style:{flex:'1',padding:'12px 16px',borderRadius:'10px',fontSize:'15px',background:'#1e293b',border:'1px solid #334155',color:'#f1f5f9'}});
+    input.addEventListener('input',e=>cs.input=e.target.value);
+    input.addEventListener('keydown',e=>{ if(e.key==='Enter') doCheck(cs.input||''); });
+
+    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR) {
+      const micBtn = h('button',{style:{width:'50px',height:'50px',borderRadius:'50%',border:'none',cursor:'pointer',background:'#3b82f6',fontSize:'20px',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:'0'}},'🎤');
+      let rec=null, listening=false;
+      micBtn.addEventListener('click',()=>{
+        if(listening){rec&&rec.stop();return;}
+        rec=new SR(); rec.lang='en-US'; rec.maxAlternatives=3;
+        rec.onresult=e=>{
+          const alts=Array.from(e.results[0]).map(a=>a.transcript.trim().toLowerCase());
+          const match=alts.find(a=>a===card.word.toLowerCase());
+          const best=match||alts[0];
+          input.value=best; cs.input=best;
+          doCheck(best);
+        };
+        rec.onerror=()=>{ listening=false; micBtn.style.background='#3b82f6'; micBtn.textContent='🎤'; };
+        rec.onend=()=>{ listening=false; micBtn.style.background='#3b82f6'; micBtn.textContent='🎤'; };
+        rec.start(); listening=true;
+        micBtn.style.background='#dc2626'; micBtn.textContent='⏹';
+      });
+      inputRow.appendChild(micBtn);
+    }
+    const sendBtn = h('button',{style:{padding:'12px 16px',borderRadius:'10px',border:'none',background:'#3b82f6',color:'#fff',fontWeight:'700',cursor:'pointer',fontSize:'14px'}},'送出');
+    sendBtn.addEventListener('click',()=>doCheck(cs.input||''));
+    inputRow.appendChild(input); inputRow.appendChild(sendBtn);
+    // reorder: input first
+    inputRow.insertBefore(input, inputRow.firstChild);
+    container.appendChild(inputRow);
+  } else {
+    const nextBtn = h('button',{style:{padding:'12px',borderRadius:'10px',border:'none',background:cs.result==='correct'?'#16a34a':'#334155',color:'#fff',fontWeight:'700',cursor:'pointer',fontSize:'15px'}},
+      cs.result==='correct'?'✅ 下一題 →':'繼續 →'
+    );
+    nextBtn.addEventListener('click',()=>{ state.cardState={}; renderMode(); });
+    container.appendChild(nextBtn);
+  }
+  return container;
+}
+
+function getQuizOptions(card) {
+  return shuffle([card.zh, ...shuffle(WORDS.filter(w=>w.word!==card.word)).slice(0,3).map(w=>w.zh)]);
+}
+
+function renderQuiz() {
+  const d = state.deck;
+  if(d.queue.length===0) return finishScreen(WORDS.length, d.wrongCount, ()=>{ state.deck=createDeck(WORDS); renderMode(); });
+  const card = d.queue[0];
+  const cs = state.cardState;
+  if(!cs.options) { cs.options=getQuizOptions(card); setTimeout(()=>speak(card.word),200); }
+
+  const container = h('div',{style:{display:'flex',flexDirection:'column',gap:'14px',width:'100%'}});
+  container.appendChild(progressBar(d.mastered.size, WORDS.length, d.queue.length));
+
+  const cardDiv = h('div',{style:{background:'#0f172a',border:'1px solid #1e293b',borderRadius:'14px',padding:'26px',textAlign:'center'}});
+  cardDiv.appendChild(h('div',{style:{fontSize:'11px',color:'#475569',letterSpacing:'3px',marginBottom:'12px',textTransform:'uppercase'}},'這個單字的中文意思？'));
+  const wordRow = h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}},
+    h('div',{style:{fontSize:'36px',fontWeight:'800',color:'#f1f5f9'}},card.word),
+    speakBtn(card.word)
+  );
+  cardDiv.appendChild(wordRow);
+  cardDiv.appendChild(h('div',{style:{fontSize:'13px',color:'#475569',marginTop:'6px'}},card.pos));
+  if(cs.selected) {
+    cardDiv.appendChild(h('div',{style:{marginTop:'12px',fontSize:'13px',color:'#64748b',lineHeight:'1.6'}},card.sentences[0].replace('____',card.word)));
+    cardDiv.appendChild(imageCard(card.word, card.imgPrompt));
+  }
+  container.appendChild(cardDiv);
+
+  const grid = h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}});
+  cs.options.forEach(opt=>{
+    let bg='#1e293b',border='#334155',color='#e2e8f0';
+    if(cs.selected) {
+      if(opt===card.zh){bg='#14532d';border='#16a34a';color='#4ade80';}
+      else if(opt===cs.selected){bg='#450a0a';border='#dc2626';color='#f87171';}
+      else{border='#1e293b';color='#475569';}
+    }
+    const btn = h('button',{style:{padding:'13px 10px',borderRadius:'12px',background:bg,border:`2px solid ${border}`,color,cursor:cs.selected?'default':'pointer',fontSize:'14px',fontWeight:'600',lineHeight:'1.4',transition:'all 0.15s'}},opt);
+    if(!cs.selected) {
+      btn.addEventListener('click',()=>{
+        const correct = opt===card.zh;
+        cs.selected=opt;
+        speak(card.word);
+        answerCard(correct);
+        state.cardState={...cs};
+        renderMode();
+      });
+    }
+    grid.appendChild(btn);
+  });
+  container.appendChild(grid);
+
+  if(cs.selected) {
+    const nextBtn = h('button',{style:{padding:'12px',borderRadius:'10px',border:'none',background:cs.selected===card.zh?'#16a34a':'#334155',color:'#fff',fontWeight:'700',cursor:'pointer',fontSize:'15px'}},
+      cs.selected===card.zh?'✅ 下一題 →':'繼續 →'
+    );
+    nextBtn.addEventListener('click',()=>{ state.cardState={}; renderMode(); });
+    container.appendChild(nextBtn);
+  }
+  return container;
+}
+
+function renderSpeaking() {
+  const d = state.deck;
+  if(d.queue.length===0) return finishScreen(WORDS.length, d.wrongCount, ()=>{ state.deck=createDeck(WORDS); renderMode(); });
+  const card = d.queue[0];
+  const cs = state.cardState;
+  const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+
+  if(!cs.phase) { cs.phase='listen'; setTimeout(()=>speak(card.word,0.85),200); }
+
+  if(!SR) return h('div',{style:{textAlign:'center',padding:'40px',color:'#64748b'}},
+    h('div',{style:{fontSize:'40px',marginBottom:'12px'}},'😔'),
+    h('div',{},'請使用 Chrome 或 Safari 瀏覽器')
+  );
+
+  const container = h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:'16px',width:'100%'}});
+  container.appendChild(progressBar(d.mastered.size, WORDS.length, d.queue.length));
+
+  const phaseLabel = cs.phase==='listen'?'先聽發音':cs.phase==='speak'?'現在跟著唸':'結果';
+  const cardDiv = h('div',{style:{width:'100%',background:'#0f172a',border:'1px solid #1e293b',borderRadius:'16px',padding:'26px',textAlign:'center'}});
+  cardDiv.appendChild(h('div',{style:{fontSize:'11px',color:'#475569',letterSpacing:'3px',textTransform:'uppercase',marginBottom:'14px'}},phaseLabel));
+  const wordRow = h('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'10px'}},
+    h('div',{style:{fontSize:'36px',fontWeight:'800',color:'#f1f5f9'}},card.word),
+    speakBtn(card.word)
+  );
+  cardDiv.appendChild(wordRow);
+  cardDiv.appendChild(h('div',{style:{fontSize:'15px',color:'#93c5fd',marginTop:'6px'}},card.zh));
+  cardDiv.appendChild(h('div',{style:{fontSize:'13px',color:'#475569',marginTop:'4px'}},card.pos));
+  if(cs.phase==='result') {
+    cardDiv.appendChild(h('div',{style:{marginTop:'12px',fontSize:'13px',color:'#64748b',lineHeight:'1.6'}},card.sentences[0].replace('____',card.word)));
+    cardDiv.appendChild(imageCard(card.word, card.imgPrompt));
+  }
+  container.appendChild(cardDiv);
+
+  if(cs.phase==='listen') {
+    const playBtn = h('button',{style:{padding:'13px 36px',borderRadius:'100px',border:'none',background:'#1e3a5f',color:'#93c5fd',fontWeight:'700',fontSize:'16px',cursor:'pointer'}},'🔊 播放發音');
+    playBtn.addEventListener('click',()=>{ speak(card.word,0.85); cs.phase='speak'; renderMode(); });
+    container.appendChild(playBtn);
+  } else if(cs.phase==='speak') {
+    const hint = h('div',{style:{fontSize:'13px',color:'#64748b'}},'按下麥克風開始說');
+    const micBtn = h('button',{style:{width:'54px',height:'54px',borderRadius:'50%',border:'none',cursor:'pointer',background:'#3b82f6',fontSize:'22px',display:'flex',alignItems:'center',justifyContent:'center'}},'🎤');
+    let rec=null, listening=false;
+    micBtn.addEventListener('click',()=>{
+      if(listening){rec&&rec.stop();return;}
+      rec=new SR(); rec.lang='en-US'; rec.maxAlternatives=3;
+      rec.onresult=e=>{
+        const alts=Array.from(e.results[0]).map(a=>a.transcript.trim().toLowerCase());
+        const match=alts.find(a=>a===card.word.toLowerCase());
+        cs.spoken=match||alts[0]; cs.result=match?'correct':'wrong'; cs.phase='result';
+        speak(card.word,0.8);
+        answerCard(!!match);
+        state.cardState={...cs};
+        renderMode();
+      };
+      rec.onerror=()=>{ listening=false; micBtn.style.background='#3b82f6'; micBtn.textContent='🎤'; hint.textContent='按下麥克風開始說'; };
+      rec.onend=()=>{ listening=false; micBtn.style.background='#3b82f6'; micBtn.textContent='🎤'; };
+      rec.start(); listening=true;
+      micBtn.style.background='#dc2626'; micBtn.textContent='⏹'; hint.textContent='🔴 錄音中，說出單字…';
+    });
+    container.appendChild(hint);
+    const btnRow = h('div',{style:{display:'flex',gap:'12px',alignItems:'center'}}, speakBtn(card.word,0.8), micBtn);
+    container.appendChild(btnRow);
+  } else {
+    container.appendChild(resultBadge(cs.result==='correct', cs.spoken));
+    const btnRow = h('div',{style:{display:'flex',gap:'10px',width:'100%'}});
+    const reBtn = h('button',{style:{flex:'1',padding:'11px',borderRadius:'10px',border:'1px solid #334155',background:'transparent',color:'#94a3b8',cursor:'pointer',fontSize:'14px'}},'🔊 再聽');
+    reBtn.addEventListener('click',()=>speak(card.word,0.75));
+    const nextBtn = h('button',{style:{flex:'2',padding:'11px',borderRadius:'10px',border:'none',background:cs.result==='correct'?'#16a34a':'#334155',color:'#fff',fontWeight:'700',cursor:'pointer',fontSize:'15px'}},
+      cs.result==='correct'?'✅ 下一個 →':'繼續 →'
+    );
+    nextBtn.addEventListener('click',()=>{ state.cardState={}; renderMode(); });
+    btnRow.appendChild(reBtn); btnRow.appendChild(nextBtn);
+    container.appendChild(btnRow);
+  }
+  return container;
+}
+
+// ── MAIN RENDER ────────────────────────────────────────
+function renderMode() {
+  const app = document.getElementById('app');
+  app.innerHTML='';
+
+  // header
+  app.appendChild(h('div',{style:{textAlign:'center',marginBottom:'22px'}},
+    h('div',{style:{display:'inline-block',background:'#1e293b',border:'1px solid #334155',borderRadius:'100px',padding:'4px 14px',fontSize:'12px',color:'#64748b',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px'}},'🧱 Perth English Trainer'),
+    h('div',{style:{fontSize:'24px',fontWeight:'800',color:'#f1f5f9'}},'工地英文 · 澳洲生活'),
+    h('div',{style:{fontSize:'12px',color:'#475569',marginTop:'5px'}},`${WORDS.length} 個單字 · Anki 記憶邏輯`)
+  ));
+
+  // mode tabs
+  const tabs = h('div',{style:{display:'flex',gap:'8px',marginBottom:'22px',flexWrap:'wrap',justifyContent:'center'}});
+  [['flashcard','🃏','單字閃卡'],['fillblank','✍️','填空練習'],['quiz','🎯','選擇測驗'],['speaking','🎤','跟讀練習']].forEach(([id,icon,label])=>{
+    const active = state.mode===id;
+    const btn = h('button',{style:{padding:'8px 16px',borderRadius:'100px',border:`2px solid ${active?'#3b82f6':'#1e293b'}`,background:active?'#1e3a5f':'#0f172a',color:active?'#93c5fd':'#64748b',cursor:'pointer',fontWeight:'600',fontSize:'13px'}},`${icon} ${label}`);
+    btn.addEventListener('click',()=>{ state.mode=id; state.deck=state.deck||createDeck(WORDS); state.cardState={}; renderMode(); });
+    tabs.appendChild(btn);
+  });
+  app.appendChild(tabs);
+
+  // content
+  const content = h('div',{style:{width:'100%'}});
+  if(!state.mode) {
+    content.appendChild(h('div',{style:{textAlign:'center',padding:'48px',background:'#0f172a',borderRadius:'16px',border:'1px dashed #1e293b'}},
+      h('div',{style:{fontSize:'48px',marginBottom:'12px'}},'🧱'),
+      h('div',{style:{fontSize:'14px',color:'#334155'}},'選一個練習模式開始'),
+      h('div',{style:{fontSize:'12px',color:'#1e293b',marginTop:'8px'}},'答錯會重複出現，全部記熟才結束')
+    ));
+  } else {
+    let modeEl;
+    if(state.mode==='flashcard') modeEl=renderFlashcard();
+    else if(state.mode==='fillblank') modeEl=renderFillBlank();
+    else if(state.mode==='quiz') modeEl=renderQuiz();
+    else if(state.mode==='speaking') modeEl=renderSpeaking();
+    if(modeEl) content.appendChild(modeEl);
+  }
+  app.appendChild(content);
+  app.appendChild(h('div',{style:{marginTop:'32px',fontSize:'12px',color:'#1e293b',textAlign:'center'}},'IELTS 7 一定拿得到 💪'));
+}
+
+window.speechSynthesis.getVoices();
+renderMode();
+</script>
+</body>
+</html>
