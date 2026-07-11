@@ -138,7 +138,9 @@ function speakBtn(text, rate=0.9) {
 
 function imageCard(word, imgPrompt) {
   const wrap = h('div',{style:{marginTop:'14px'}});
-  let seed = Math.floor(Math.random()*99999);
+  // 固定 seed：用單字的 hash，換一張才隨機
+  const wordSeeds = {bricklaying:65780,mortar:46164,trowel:79426,foreman:38132,harness:13184,smoko:57805,arvo:66277,tradie:61625,reckon:71655,mate:31583,heaps:37333,plumb:53542,course:90121,subcontractor:89503,lease:60292,bond:22602,Medicare:64451,strategy:85243,establish:9745,obtain:62653,perceive:11167,retain:97005,assess:19023,anticipate:44071,acknowledge:36274};
+  let seed = wordSeeds[word] || 12345;
   let status = 'idle';
 
   function render() {
