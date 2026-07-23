@@ -624,7 +624,7 @@ function renderQuiz(){
       btn.addEventListener('click',()=>{
         const correct=opt===card.zh;
         cs.selected=opt;speak(card.word);
-        answerCard(correct);state.cs={...cs};renderMode();
+        answerCard(correct);
       });
     }
     grid.appendChild(btn);
@@ -768,7 +768,7 @@ document.addEventListener('keydown',(e)=>{
         const opt=cs.opts[i];
         const correct=opt===d.queue[0].zh;
         cs.selected=opt;speak(d.queue[0].word);
-        answerCard(correct);state.cs={...cs};renderMode();
+        answerCard(correct);
       }
     }
   }
